@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coast FIRE Calculator - Personal Finance Tools</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>LET US <span class="highlight">fuel</span> your <span class="highlight">financial</span> independence</h1>
+            <p>Calculate when you can stop contributing to retirement and let compound growth do the work for you. Your journey to Coast FIRE starts here.</p>
+        </header>
+
+        <main>
+            <div class="calculator-layout">
+                <div class="inputs-section">
+                    <form id="coast-fire-form">
+                        <div class="form-group">
+                            <label for="current-age">Current Age</label>
+                            <input type="number" id="current-age" min="18" max="80" value="30" required 
+                                   aria-describedby="current-age-error" aria-invalid="false">
+                            <div id="current-age-error" class="error-message" role="alert"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="retirement-age">Planned Retirement Age</label>
+                            <input type="number" id="retirement-age" min="1" max="100" value="65" required 
+                                   aria-describedby="retirement-age-error" aria-invalid="false">
+                            <div id="retirement-age-error" class="error-message" role="alert"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="annual-spending">Annual Retirement Spending</label>
+                            <input type="number" id="annual-spending" min="0" value="40000" required 
+                                   aria-describedby="annual-spending-help annual-spending-error" aria-invalid="false">
+                            <small id="annual-spending-help">Amount you plan to spend annually in retirement (in today's dollars)</small>
+                            <div id="annual-spending-error" class="error-message" role="alert"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="current-assets">Current Invested Assets</label>
+                            <input type="number" id="current-assets" min="0" value="0" required 
+                                   aria-describedby="current-assets-help current-assets-error" aria-invalid="false">
+                            <small id="current-assets-help">Current amount invested in retirement accounts, stocks, etc.</small>
+                            <div id="current-assets-error" class="error-message" role="alert"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="monthly-contributions">Monthly Contributions</label>
+                            <input type="number" id="monthly-contributions" min="0" value="0" 
+                                   aria-describedby="monthly-contributions-help" aria-invalid="false">
+                            <small id="monthly-contributions-help">Additional monthly contributions to investments</small>
+                        </div>
+
+                        <div class="slider-group">
+                            <label for="investment-rate">Investment Rate of Return: <span id="investment-rate-value">7.0%</span></label>
+                            <input type="range" id="investment-rate" min="1" max="15" value="7" step="0.1" 
+                                   aria-describedby="investment-rate-help">
+                            <small id="investment-rate-help">Expected annual investment return (not adjusted for inflation)</small>
+                        </div>
+
+                        <div class="slider-group">
+                            <label for="inflation-rate">Inflation Rate: <span id="inflation-rate-value">3.0%</span></label>
+                            <input type="range" id="inflation-rate" min="0" max="10" value="3" step="0.1" 
+                                   aria-describedby="inflation-rate-help">
+                            <small id="inflation-rate-help">Expected annual inflation rate</small>
+                        </div>
+
+                        <div class="slider-group">
+                            <label for="withdrawal-rate">Safe Withdrawal Rate: <span id="withdrawal-rate-value">4.0%</span></label>
+                            <input type="range" id="withdrawal-rate" min="2" max="8" value="4" step="0.1" 
+                                   aria-describedby="withdrawal-rate-help">
+                            <small id="withdrawal-rate-help">Percentage of net worth you plan to withdraw annually in retirement</small>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="results-section">
+                    <div class="results-card primary-results">
+                        <h2>Coast FIRE Results</h2>
+                        <div class="result-item">
+                            <span class="result-label">Coast FIRE Number:</span>
+                            <span class="result-value" id="coast-fire-number">$0</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Status:</span>
+                            <span class="result-value" id="coast-fire-status">Calculating...</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Progress:</span>
+                            <span class="result-value" id="coast-fire-progress">0%</span>
+                        </div>
+                    </div>
+
+                    <div class="results-card secondary-results">
+                        <h3>Additional Metrics</h3>
+                        <div class="result-item">
+                            <span class="result-label">Regular FIRE Number:</span>
+                            <span class="result-value" id="regular-fire-number">$0</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Years to Coast FIRE:</span>
+                            <span class="result-value" id="years-to-coast-fire">-</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Monthly Savings Needed:</span>
+                            <span class="result-value" id="monthly-savings-needed">$0</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Years of Growth Remaining:</span>
+                            <span class="result-value" id="years-growth-remaining">-</span>
+                        </div>
+                    </div>
+
+                    <div class="chart-container">
+                        <canvas id="projection-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
