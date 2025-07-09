@@ -2,6 +2,10 @@
 
 A comprehensive web application for calculating Coast FIRE (Financial Independence, Retire Early) milestones. This calculator helps users determine when they can stop contributing to retirement savings and let compound growth handle the rest.
 
+## 🚀 Live Demo
+
+Visit the live calculator at: **https://lizkenyon.github.io/firefirefire/**
+
 ## Features
 
 ### Core Functionality
@@ -113,9 +117,42 @@ calculator-pro/
 - Additional calculator types
 - Email results feature
 
+## 🚀 Deployment
+
+This project is configured for automatic deployment to GitHub Pages using GitHub Actions.
+
+### Automatic Deployment
+- **Trigger**: Every push to the `main` branch
+- **URL**: https://lizkenyon.github.io/firefirefire/
+- **Status**: ![Deploy Status](https://github.com/lizkenyon/firefirefire/workflows/Deploy%20to%20GitHub%20Pages/badge.svg)
+
+### Manual Deployment
+The deployment workflow can also be triggered manually from the GitHub Actions tab.
+
+### Local Development
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/lizkenyon/firefirefire.git
+   cd firefirefire
+   ```
+
+2. Open `index.html` in your web browser or serve with a local server:
+   ```bash
+   python -m http.server 8000
+   # or
+   npx serve .
+   ```
+
+3. Visit `http://localhost:8000` in your browser
+
 ## Contributing
 
 This is a client-side application built with vanilla JavaScript, HTML, and CSS. The Chart.js library is used for data visualization.
+
+### Development Setup
+- No build process required
+- Pure HTML, CSS, and JavaScript
+- External dependency: Chart.js (loaded via CDN)
 
 ## License
 

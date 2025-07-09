@@ -1,0 +1,31 @@
+# GitHub Pages Jekyll configuration
+title: Coast FIRE Calculator
+description: Calculate when you can stop contributing to retirement and let compound growth do the work
+baseurl: "/firefirefire"
+url: "https://lizkenyon.github.io"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+theme: minima
+
+# Exclude files from processing
+exclude:
+  - README.md
+  - .gitignore
+  - .github/
+
+# Include files
+include:
+  - index.html
+  - styles.css
+  - script.js
+
+# Plugin settings
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+
+# SEO settings
+author: Elizabeth Kenyon
+lang: en-US
