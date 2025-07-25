@@ -777,3 +777,154 @@ header p {
         min-height: 300px;
     }
 }
+
+/* Year-Over-Year Growth Calculator Specific Styles */
+.radio-group {
+    display: flex;
+    gap: var(--space-md);
+    margin-top: var(--space-xs);
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-dark);
+    transition: all var(--transition-fast);
+}
+
+.radio-label input[type="radio"] {
+    margin-right: var(--space-xs);
+    accent-color: var(--success-green);
+}
+
+.radio-label:hover {
+    color: var(--success-green);
+}
+
+.growth-rate-display {
+    text-align: center;
+    margin: var(--space-lg) 0;
+    padding: var(--space-lg);
+    background: linear-gradient(135deg, rgba(107, 143, 71, 0.05) 0%, rgba(107, 143, 71, 0.02) 100%);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(107, 143, 71, 0.1);
+}
+
+.growth-rate {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-weight: 700;
+    color: var(--success-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xs);
+    transition: all var(--transition-normal);
+}
+
+.growth-rate.negative {
+    color: var(--error-red);
+}
+
+.growth-rate.neutral {
+    color: var(--neutral-gray);
+}
+
+.growth-arrow {
+    font-size: clamp(2rem, 4vw, 3rem);
+    transition: all var(--transition-normal);
+}
+
+.growth-value {
+    transition: all var(--transition-normal);
+}
+
+.growth-label {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    font-weight: 500;
+    color: var(--text-light);
+    margin-left: var(--space-xs);
+}
+
+.growth-classification {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--success-green);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all var(--transition-normal);
+}
+
+.growth-classification.conservative {
+    color: var(--neutral-gray);
+}
+
+.growth-classification.moderate {
+    color: var(--warning-orange);
+}
+
+.growth-classification.strong {
+    color: var(--success-green);
+}
+
+.growth-classification.exceptional {
+    color: var(--secondary-accent);
+}
+
+.growth-classification.negative {
+    color: var(--error-red);
+}
+
+
+/* Growth-specific result values */
+#total-growth-percentage.positive {
+    color: var(--success-green);
+}
+
+#total-growth-percentage.negative {
+    color: var(--error-red);
+}
+
+#total-dollar-change.positive {
+    color: var(--success-green);
+}
+
+#total-dollar-change.negative {
+    color: var(--error-red);
+}
+
+/* Animation for growth rate changes */
+@keyframes growthUpdate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.growth-rate.updating {
+    animation: growthUpdate 0.3s ease-in-out;
+}
+
+/* Mobile optimizations for growth calculator */
+@media (max-width: 768px) {
+    .radio-group {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+    
+    .growth-rate-display {
+        padding: var(--space-md);
+        margin: var(--space-md) 0;
+    }
+    
+    .growth-rate {
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+    
+    .growth-arrow {
+        font-size: 2rem;
+    }
+}

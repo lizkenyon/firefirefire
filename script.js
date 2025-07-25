@@ -1371,11 +1371,265 @@ class TraditionalFireCalculator {
     }
 }
 
+class YearOverYearGrowthCalculator {
+    constructor() {
+        this.initializeEventListeners();
+        this.loadFromStorage();
+        this.calculate();
+    }
+
+    initializeEventListeners() {
+        const inputs = document.querySelectorAll('#year-growth-form input');
+        inputs.forEach(input => {
+            input.addEventListener('input', () => {
+                this.calculate();
+                this.saveToStorage();
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.calculate();
+                }
+            });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.clearErrors();
+            }
+        });
+    }
+
+    getInputValues() {
+        return {
+            startingAmount: parseFloat(document.getElementById('starting-amount').value) || 0,
+            endingAmount: parseFloat(document.getElementById('ending-amount').value) || 0,
+            numberOfYears: parseFloat(document.getElementById('number-of-years').value) || 0
+        };
+    }
+
+    validateInputs(inputs) {
+        const errors = {};
+
+        if (inputs.startingAmount <= 0) {
+            errors.startingAmount = 'Starting amount must be greater than zero';
+        }
+
+        if (inputs.endingAmount <= 0) {
+            errors.endingAmount = 'Ending amount must be greater than zero';
+        }
+
+        if (inputs.numberOfYears <= 0) {
+            errors.numberOfYears = 'Number of years must be greater than zero';
+        }
+
+        if (inputs.numberOfYears > 100) {
+            errors.numberOfYears = 'Number of years cannot exceed 100';
+        }
+
+        // Check for unrealistic growth rates
+        if (inputs.startingAmount > 0 && inputs.endingAmount > 0 && inputs.numberOfYears > 0) {
+            const growthRatio = inputs.endingAmount / inputs.startingAmount;
+            const annualGrowthRate = Math.pow(growthRatio, 1 / inputs.numberOfYears) - 1;
+            
+            if (Math.abs(annualGrowthRate) > 10) { // >1000% annual growth
+                errors.general = 'This represents extremely high growth (>1000% annually). Please verify your inputs.';
+            }
+        }
+
+        return errors;
+    }
+
+    displayErrors(errors) {
+        this.clearErrors();
+
+        Object.keys(errors).forEach(field => {
+            if (field === 'general') {
+                // Display general errors in the first available error element
+                const firstErrorElement = document.querySelector('#year-growth-form .error-message');
+                if (firstErrorElement) {
+                    firstErrorElement.textContent = errors[field];
+                }
+            } else {
+                const errorElement = document.getElementById(`${field.replace(/([A-Z])/g, '-$1').toLowerCase()}-error`);
+                const inputElement = document.getElementById(field.replace(/([A-Z])/g, '-$1').toLowerCase());
+                
+                if (errorElement && inputElement) {
+                    errorElement.textContent = errors[field];
+                    inputElement.setAttribute('aria-invalid', 'true');
+                }
+            }
+        });
+    }
+
+    clearErrors() {
+        const errorElements = document.querySelectorAll('#year-growth-form .error-message');
+        const inputElements = document.querySelectorAll('#year-growth-form input');
+        
+        errorElements.forEach(element => {
+            element.textContent = '';
+        });
+        
+        inputElements.forEach(element => {
+            element.setAttribute('aria-invalid', 'false');
+        });
+    }
+
+    calculateYearOverYearGrowth(startingAmount, endingAmount, numberOfYears) {
+        if (startingAmount <= 0 || endingAmount <= 0 || numberOfYears <= 0) {
+            throw new Error('All values must be positive');
+        }
+
+        const growthRatio = endingAmount / startingAmount;
+        const annualGrowthRate = Math.pow(growthRatio, 1 / numberOfYears) - 1;
+        
+        const totalGrowthPercentage = ((endingAmount - startingAmount) / startingAmount) * 100;
+        const totalDollarChange = endingAmount - startingAmount;
+        const monthlyGrowthRate = Math.pow(1 + annualGrowthRate, 1/12) - 1;
+
+        return {
+            annualGrowthRate: annualGrowthRate * 100,
+            totalGrowthPercentage,
+            totalDollarChange,
+            monthlyGrowthRate: monthlyGrowthRate * 100,
+            isPositiveGrowth: annualGrowthRate > 0,
+            isExceptionalGrowth: Math.abs(annualGrowthRate) > 0.15
+        };
+    }
+
+    getGrowthClassification(growthRate) {
+        const absRate = Math.abs(growthRate);
+        
+        if (growthRate < 0) {
+            return { text: 'Negative Growth', className: 'negative' };
+        } else if (absRate <= 3) {
+            return { text: 'Conservative Growth', className: 'conservative' };
+        } else if (absRate <= 7) {
+            return { text: 'Moderate Growth', className: 'moderate' };
+        } else if (absRate <= 12) {
+            return { text: 'Strong Growth', className: 'strong' };
+        } else {
+            return { text: 'Exceptional Growth', className: 'exceptional' };
+        }
+    }
+
+    formatAmount(amount) {
+        return new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        }).format(amount);
+    }
+
+    formatPercentage(value) {
+        return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+    }
+
+    updateResults(results) {
+        // Animate the growth rate update
+        const growthRateElement = document.getElementById('annual-growth-rate');
+        growthRateElement.classList.add('updating');
+        setTimeout(() => growthRateElement.classList.remove('updating'), 300);
+
+        // Update growth rate display
+        const growthValue = document.getElementById('growth-value');
+        const growthArrow = document.getElementById('growth-arrow');
+        const growthRate = document.getElementById('annual-growth-rate');
+
+        growthValue.textContent = this.formatPercentage(results.annualGrowthRate);
+        
+        // Update arrow and colors based on growth direction
+        if (results.isPositiveGrowth) {
+            growthArrow.textContent = '↗';
+            growthRate.className = 'growth-rate';
+        } else if (results.annualGrowthRate < 0) {
+            growthArrow.textContent = '↘';
+            growthRate.className = 'growth-rate negative';
+        } else {
+            growthArrow.textContent = '→';
+            growthRate.className = 'growth-rate neutral';
+        }
+
+        // Update growth classification
+        const classification = this.getGrowthClassification(results.annualGrowthRate);
+        const classificationElement = document.getElementById('growth-classification');
+        classificationElement.textContent = classification.text;
+        classificationElement.className = `growth-classification ${classification.className}`;
+
+        // Update secondary metrics
+        const totalGrowthElement = document.getElementById('total-growth-percentage');
+        totalGrowthElement.textContent = this.formatPercentage(results.totalGrowthPercentage);
+        totalGrowthElement.className = results.isPositiveGrowth ? 'result-value positive' : 'result-value negative';
+
+        const dollarChangeElement = document.getElementById('total-dollar-change');
+        const changeText = results.totalDollarChange >= 0 ? '+' : '';
+        dollarChangeElement.textContent = changeText + this.formatAmount(results.totalDollarChange);
+        dollarChangeElement.className = results.isPositiveGrowth ? 'result-value positive' : 'result-value negative';
+
+        document.getElementById('monthly-growth-rate').textContent = this.formatPercentage(results.monthlyGrowthRate);
+    }
+
+    calculate() {
+        const inputs = this.getInputValues();
+        const errors = this.validateInputs(inputs);
+
+        if (Object.keys(errors).length > 0) {
+            this.displayErrors(errors);
+            return;
+        }
+
+        this.clearErrors();
+
+        try {
+            const results = this.calculateYearOverYearGrowth(
+                inputs.startingAmount,
+                inputs.endingAmount,
+                inputs.numberOfYears
+            );
+
+            this.updateResults(results);
+        } catch (error) {
+            console.error('Calculation error:', error);
+            this.displayErrors({ general: 'An error occurred during calculation. Please check your inputs.' });
+        }
+    }
+
+    saveToStorage() {
+        try {
+            const inputs = this.getInputValues();
+            const data = {
+                startingAmount: inputs.startingAmount,
+                endingAmount: inputs.endingAmount,
+                numberOfYears: inputs.numberOfYears
+            };
+            localStorage.setItem('yearGrowthCalculatorData', JSON.stringify(data));
+        } catch (error) {
+            console.warn('Failed to save to localStorage:', error);
+        }
+    }
+
+    loadFromStorage() {
+        try {
+            const saved = localStorage.getItem('yearGrowthCalculatorData');
+            if (saved) {
+                const data = JSON.parse(saved);
+                
+                document.getElementById('starting-amount').value = data.startingAmount || 10000;
+                document.getElementById('ending-amount').value = data.endingAmount || 15000;
+                document.getElementById('number-of-years').value = data.numberOfYears || 5;
+            }
+        } catch (error) {
+            console.warn('Failed to load from localStorage:', error);
+        }
+    }
+}
+
 class AppManager {
     constructor() {
         this.coastFireCalculator = null;
         this.traditionalFireCalculator = null;
         this.mortgageCalculator = null;
+        this.yearGrowthCalculator = null;
         this.currentCalculator = this.loadActiveCalculator();
         
         this.initializeNavigation();
@@ -1422,7 +1676,7 @@ class AppManager {
         try {
             const saved = localStorage.getItem('activeCalculator');
             // Validate the saved calculator exists
-            if (saved === 'coast-fire' || saved === 'traditional-fire' || saved === 'mortgage') {
+            if (saved === 'coast-fire' || saved === 'traditional-fire' || saved === 'mortgage' || saved === 'year-growth') {
                 return saved;
             }
         } catch (error) {
@@ -1456,6 +1710,7 @@ class AppManager {
         this.coastFireCalculator = new CoastFireCalculator();
         this.traditionalFireCalculator = new TraditionalFireCalculator();
         this.mortgageCalculator = new MortgageCalculator();
+        this.yearGrowthCalculator = new YearOverYearGrowthCalculator();
     }
 }
 

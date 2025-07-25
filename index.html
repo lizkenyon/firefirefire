@@ -16,6 +16,7 @@
                 <button class="nav-btn active" data-calculator="coast-fire">Coast FIRE</button>
                 <button class="nav-btn" data-calculator="traditional-fire">Traditional FIRE</button>
                 <button class="nav-btn" data-calculator="mortgage">Mortgage Burden</button>
+                <button class="nav-btn" data-calculator="year-growth">Year-Over-Year Growth</button>
             </nav>
         </header>
 
@@ -330,6 +331,76 @@
                     <div class="chart-container">
                         <h3>Mortgage Payment as Percentage of Income</h3>
                         <canvas id="mortgage-percentage-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Year-Over-Year Growth Calculator -->
+            <div id="year-growth-calculator" class="calculator-section">
+                <div class="calculator-intro">
+                    <h2>Year-Over-Year Growth Calculator</h2>
+                    <p>Calculate the compound annual growth rate (CAGR) between two values over time. Perfect for analyzing investment returns, salary growth, or business metrics.</p>
+                </div>
+                
+                <div class="calculator-layout">
+                    <div class="inputs-section">
+                        <form id="year-growth-form">
+                            <div class="form-group">
+                                <label for="starting-amount">Starting Amount</label>
+                                <input type="number" id="starting-amount" min="0.01" step="0.01" value="10000" required 
+                                       aria-describedby="starting-amount-help starting-amount-error" aria-invalid="false">
+                                <small id="starting-amount-help">Initial amount at the beginning of the period (investment, salary, revenue, etc.)</small>
+                                <div id="starting-amount-error" class="error-message" role="alert"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="ending-amount">Ending Amount</label>
+                                <input type="number" id="ending-amount" min="0.01" step="0.01" value="15000" required 
+                                       aria-describedby="ending-amount-help ending-amount-error" aria-invalid="false">
+                                <small id="ending-amount-help">Final amount at the end of the period</small>
+                                <div id="ending-amount-error" class="error-message" role="alert"></div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="number-of-years">Number of Years</label>
+                                <input type="number" id="number-of-years" min="0.1" max="100" step="0.1" value="5" required 
+                                       aria-describedby="number-of-years-help number-of-years-error" aria-invalid="false">
+                                <small id="number-of-years-help">Time period in years (e.g., 2.5 for 2 years and 6 months)</small>
+                                <div id="number-of-years-error" class="error-message" role="alert"></div>
+                            </div>
+
+                        </form>
+                    </div>
+
+                    <div class="results-section">
+                        <div class="results-card primary-results">
+                            <h2>📈 Growth Analysis</h2>
+                            <div class="growth-rate-display">
+                                <div class="growth-rate" id="annual-growth-rate">
+                                    <span class="growth-arrow" id="growth-arrow">↗</span>
+                                    <span class="growth-value" id="growth-value">8.45%</span>
+                                    <span class="growth-label">annually</span>
+                                </div>
+                            </div>
+                            <div class="growth-classification" id="growth-classification">Strong Growth</div>
+                        </div>
+
+                        <div class="results-card secondary-results">
+                            <h3>Growth Metrics</h3>
+                            <div class="result-item">
+                                <span class="result-label">Total Growth:</span>
+                                <span class="result-value" id="total-growth-percentage">+50.0%</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Amount Change:</span>
+                                <span class="result-value" id="total-dollar-change">+5,000</span>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Monthly Growth Rate:</span>
+                                <span class="result-value" id="monthly-growth-rate">0.68%</span>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
