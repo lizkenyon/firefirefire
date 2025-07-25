@@ -927,9 +927,454 @@ class MortgageCalculator {
     }
 }
 
+class TraditionalFireCalculator {
+    constructor() {
+        this.chart = null;
+        this.initializeEventListeners();
+        this.loadFromStorage();
+        this.calculate();
+    }
+
+    initializeEventListeners() {
+        const inputs = document.querySelectorAll('#traditional-fire-form input');
+        inputs.forEach(input => {
+            input.addEventListener('input', () => {
+                this.updateSliderValues();
+                this.calculate();
+                this.saveToStorage();
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.calculate();
+                }
+            });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.clearErrors();
+            }
+        });
+
+        this.updateSliderValues();
+    }
+
+    updateSliderValues() {
+        const expectedReturnRate = document.getElementById('expected-return-rate');
+        const fireInflationRate = document.getElementById('fire-inflation-rate');
+        const safeWithdrawalRate = document.getElementById('safe-withdrawal-rate');
+
+        if (expectedReturnRate) {
+            document.getElementById('expected-return-rate-value').textContent = parseFloat(expectedReturnRate.value).toFixed(1) + '%';
+        }
+        if (fireInflationRate) {
+            document.getElementById('fire-inflation-rate-value').textContent = parseFloat(fireInflationRate.value).toFixed(1) + '%';
+        }
+        if (safeWithdrawalRate) {
+            document.getElementById('safe-withdrawal-rate-value').textContent = parseFloat(safeWithdrawalRate.value).toFixed(1) + '%';
+        }
+    }
+
+    getInputValues() {
+        return {
+            yearlySpending: parseFloat(document.getElementById('yearly-spending').value),
+            monthlyInvestments: parseFloat(document.getElementById('monthly-investments').value),
+            currentInvestedAssets: parseFloat(document.getElementById('current-invested-assets').value),
+            expectedReturnRate: parseFloat(document.getElementById('expected-return-rate').value) / 100,
+            inflationRate: parseFloat(document.getElementById('fire-inflation-rate').value) / 100,
+            safeWithdrawalRate: parseFloat(document.getElementById('safe-withdrawal-rate').value) / 100
+        };
+    }
+
+    calculate() {
+        const inputs = this.getInputValues();
+        
+        if (!this.validateInputs(inputs)) {
+            return;
+        }
+
+        const results = this.performCalculations(inputs);
+        this.updateResults(results);
+        this.updateChart(inputs, results);
+    }
+
+    validateInputs(inputs) {
+        this.clearErrors();
+        let isValid = true;
+
+        if (inputs.yearlySpending < 15000 || inputs.yearlySpending > 500000) {
+            this.showError('yearly-spending', 'Yearly spending must be between $15,000 and $500,000');
+            isValid = false;
+        }
+
+        if (inputs.monthlyInvestments < 100 || inputs.monthlyInvestments > 50000) {
+            this.showError('monthly-investments', 'Monthly investments must be between $100 and $50,000');
+            isValid = false;
+        }
+
+        if (inputs.currentInvestedAssets < 0 || inputs.currentInvestedAssets > 10000000) {
+            this.showError('current-invested-assets', 'Current invested assets must be between $0 and $10,000,000');
+            isValid = false;
+        }
+
+        if (inputs.expectedReturnRate <= inputs.inflationRate) {
+            this.showError('expected-return-rate', 'Expected return rate must be higher than inflation rate');
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    showError(fieldId, message) {
+        const field = document.getElementById(fieldId);
+        const errorDiv = document.getElementById(fieldId + '-error');
+        
+        if (field && errorDiv) {
+            field.classList.add('error');
+            field.setAttribute('aria-invalid', 'true');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    }
+
+    clearErrors() {
+        const errorMessages = document.querySelectorAll('.error-message');
+        const errorFields = document.querySelectorAll('.error');
+        
+        errorMessages.forEach(error => {
+            error.style.display = 'none';
+            error.textContent = '';
+        });
+        
+        errorFields.forEach(field => {
+            field.classList.remove('error');
+            field.setAttribute('aria-invalid', 'false');
+        });
+    }
+
+    performCalculations(inputs) {
+        const realReturnRate = inputs.expectedReturnRate - inputs.inflationRate;
+        
+        // Calculate FIRE number
+        const fireNumber = inputs.yearlySpending / inputs.safeWithdrawalRate;
+        
+        // Calculate time to FIRE
+        const timeToFire = this.calculateTimeToFIRE(
+            inputs.currentInvestedAssets,
+            inputs.monthlyInvestments,
+            fireNumber,
+            realReturnRate
+        );
+        
+        // Calculate current progress
+        const currentProgress = (inputs.currentInvestedAssets / fireNumber) * 100;
+        
+        // Calculate monthly retirement income
+        const monthlyRetirementIncome = inputs.yearlySpending / 12;
+        
+        // Calculate total contributions and investment growth
+        const totalContributions = timeToFire.achievable ? 
+            inputs.monthlyInvestments * timeToFire.totalMonths : 
+            inputs.monthlyInvestments * 600; // 50 years worth
+        const projectedPortfolioValue = timeToFire.achievable ? fireNumber : this.calculateFutureValue(inputs, realReturnRate, 50);
+        const investmentGrowth = Math.max(0, projectedPortfolioValue - inputs.currentInvestedAssets - totalContributions);
+        
+        // Generate projection data for chart
+        const projectionData = this.generateProjectionData(inputs, realReturnRate, timeToFire.years);
+
+        return {
+            fireNumber,
+            timeToFire,
+            currentProgress,
+            monthlyRetirementIncome,
+            projectedPortfolioValue,
+            totalContributions,
+            investmentGrowth,
+            projectionData
+        };
+    }
+
+    calculateTimeToFIRE(currentAssets, monthlyInvestment, fireNumber, realReturnRate) {
+        const annualContribution = monthlyInvestment * 12;
+        let years = 0;
+        let currentValue = currentAssets;
+        
+        // Check if already at FIRE
+        if (currentValue >= fireNumber) {
+            return { years: 0, months: 0, totalMonths: 0, achievable: true };
+        }
+        
+        // Iterative calculation up to 50 years
+        while (currentValue < fireNumber && years < 50) {
+            currentValue = currentValue * (1 + realReturnRate) + annualContribution;
+            years++;
+        }
+        
+        if (years >= 50) {
+            return { years: 50, months: 0, totalMonths: 600, achievable: false };
+        }
+        
+        // Refine to monthly precision for the final year
+        currentValue = currentAssets;
+        for (let year = 0; year < years - 1; year++) {
+            currentValue = currentValue * (1 + realReturnRate) + annualContribution;
+        }
+        
+        const monthlyRate = realReturnRate / 12;
+        let months = 0;
+        
+        while (currentValue < fireNumber && months < 12) {
+            currentValue += monthlyInvestment;
+            currentValue *= (1 + monthlyRate);
+            months++;
+        }
+        
+        return { 
+            years: years - 1 + (months / 12), 
+            months: months, 
+            totalMonths: (years - 1) * 12 + months,
+            achievable: true 
+        };
+    }
+
+    calculateFutureValue(inputs, realReturnRate, years) {
+        let value = inputs.currentInvestedAssets;
+        const annualContribution = inputs.monthlyInvestments * 12;
+        
+        for (let year = 0; year < years; year++) {
+            value = value * (1 + realReturnRate) + annualContribution;
+        }
+        
+        return value;
+    }
+
+    generateProjectionData(inputs, realReturnRate, maxYears) {
+        const data = [];
+        const years = Math.min(maxYears + 5, 50);
+        let currentValue = inputs.currentInvestedAssets;
+        
+        for (let year = 0; year <= years; year++) {
+            data.push({
+                year: year,
+                portfolioValue: currentValue
+            });
+            
+            if (year < years) {
+                currentValue = currentValue * (1 + realReturnRate) + (inputs.monthlyInvestments * 12);
+            }
+        }
+        
+        return data;
+    }
+
+    updateResults(results) {
+        // Update main timeline display
+        if (results.timeToFire.achievable) {
+            if (results.timeToFire.years === 0) {
+                document.getElementById('fire-timeline').textContent = 'Achieved!';
+            } else {
+                const years = Math.floor(results.timeToFire.years);
+                const months = Math.round((results.timeToFire.years - years) * 12);
+                document.getElementById('fire-timeline').textContent = `${years} years, ${months} months`;
+            }
+        } else {
+            document.getElementById('fire-timeline').textContent = '50+ years';
+        }
+        
+        document.getElementById('fire-number').textContent = this.formatCurrency(results.fireNumber);
+        document.getElementById('monthly-retirement-income').textContent = this.formatCurrency(results.monthlyRetirementIncome);
+        document.getElementById('current-progress').textContent = results.currentProgress.toFixed(1) + '%';
+        document.getElementById('projected-portfolio-value').textContent = this.formatCurrency(results.projectedPortfolioValue);
+        document.getElementById('total-contributions').textContent = this.formatCurrency(results.totalContributions);
+        document.getElementById('investment-growth').textContent = this.formatCurrency(results.investmentGrowth);
+    }
+
+    updateChart(inputs, results) {
+        const ctx = document.getElementById('fire-projection-chart').getContext('2d');
+        
+        if (this.chart) {
+            this.chart.destroy();
+        }
+
+        const years = results.projectionData.map(p => p.year);
+        const portfolioValues = results.projectionData.map(p => p.portfolioValue);
+        const fireLineData = new Array(results.projectionData.length).fill(results.fireNumber);
+
+        this.chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: years,
+                datasets: [{
+                    label: 'Portfolio Value',
+                    data: portfolioValues,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    tension: 0.3,
+                    borderWidth: 3,
+                    pointRadius: 0,
+                    pointHoverRadius: 8,
+                    pointHoverBackgroundColor: '#10b981',
+                    pointHoverBorderColor: '#ffffff',
+                    pointHoverBorderWidth: 3
+                }, {
+                    label: 'FIRE Number',
+                    data: fireLineData,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    borderDash: [8, 4]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Years',
+                            color: '#6b7280',
+                            font: {
+                                family: 'Inter',
+                                size: 14,
+                                weight: 500
+                            }
+                        },
+                        grid: {
+                            color: '#f0ede7',
+                            borderColor: '#e8e0d6'
+                        },
+                        ticks: {
+                            color: '#6b6b6b',
+                            font: {
+                                family: 'Inter',
+                                size: 12
+                            }
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Portfolio Value ($)',
+                            color: '#6b7280',
+                            font: {
+                                family: 'Inter',
+                                size: 14,
+                                weight: 500
+                            }
+                        },
+                        grid: {
+                            color: '#f0ede7',
+                            borderColor: '#e8e0d6'
+                        },
+                        ticks: {
+                            color: '#6b6b6b',
+                            font: {
+                                family: 'Inter',
+                                size: 12
+                            },
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        backgroundColor: '#111827',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff',
+                        borderColor: '#374151',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        titleFont: {
+                            family: 'Inter',
+                            size: 14,
+                            weight: 600
+                        },
+                        bodyFont: {
+                            family: 'Inter',
+                            size: 13
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': $' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: '#2d2d2d',
+                            font: {
+                                family: 'Inter',
+                                size: 14,
+                                weight: 500
+                            },
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    formatCurrency(amount) {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(amount);
+    }
+
+    saveToStorage() {
+        const data = {
+            yearlySpending: document.getElementById('yearly-spending').value,
+            monthlyInvestments: document.getElementById('monthly-investments').value,
+            currentInvestedAssets: document.getElementById('current-invested-assets').value,
+            expectedReturnRate: document.getElementById('expected-return-rate').value,
+            fireInflationRate: document.getElementById('fire-inflation-rate').value,
+            safeWithdrawalRate: document.getElementById('safe-withdrawal-rate').value
+        };
+        
+        localStorage.setItem('traditionalFireCalculatorData', JSON.stringify(data));
+    }
+
+    loadFromStorage() {
+        const savedData = localStorage.getItem('traditionalFireCalculatorData');
+        if (savedData) {
+            const data = JSON.parse(savedData);
+            
+            Object.keys(data).forEach(key => {
+                const element = document.getElementById(key.replace(/([A-Z])/g, '-$1').toLowerCase());
+                if (element) {
+                    element.value = data[key];
+                }
+            });
+            
+            this.updateSliderValues();
+        }
+    }
+}
+
 class AppManager {
     constructor() {
         this.coastFireCalculator = null;
+        this.traditionalFireCalculator = null;
         this.mortgageCalculator = null;
         this.currentCalculator = this.loadActiveCalculator();
         
@@ -977,7 +1422,7 @@ class AppManager {
         try {
             const saved = localStorage.getItem('activeCalculator');
             // Validate the saved calculator exists
-            if (saved === 'coast-fire' || saved === 'mortgage') {
+            if (saved === 'coast-fire' || saved === 'traditional-fire' || saved === 'mortgage') {
                 return saved;
             }
         } catch (error) {
@@ -1009,6 +1454,7 @@ class AppManager {
 
     initializeCalculators() {
         this.coastFireCalculator = new CoastFireCalculator();
+        this.traditionalFireCalculator = new TraditionalFireCalculator();
         this.mortgageCalculator = new MortgageCalculator();
     }
 }
