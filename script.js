@@ -23,6 +23,14 @@ class CoastFireCalculator {
             });
         });
 
+        // Range analysis toggle
+        const enableRangeAnalysis = document.getElementById('enable-range-analysis');
+        enableRangeAnalysis.addEventListener('change', () => {
+            this.toggleRangeAnalysis();
+            this.calculate();
+            this.saveToStorage();
+        });
+
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 this.clearErrors();
@@ -36,10 +44,57 @@ class CoastFireCalculator {
         const investmentRate = document.getElementById('investment-rate');
         const inflationRate = document.getElementById('inflation-rate');
         const withdrawalRate = document.getElementById('withdrawal-rate');
+        const rateRange = document.getElementById('rate-range');
 
         document.getElementById('investment-rate-value').textContent = parseFloat(investmentRate.value).toFixed(1) + '%';
         document.getElementById('inflation-rate-value').textContent = parseFloat(inflationRate.value).toFixed(1) + '%';
         document.getElementById('withdrawal-rate-value').textContent = parseFloat(withdrawalRate.value).toFixed(1) + '%';
+        
+        if (rateRange) {
+            document.getElementById('rate-range-value').textContent = parseFloat(rateRange.value).toFixed(1) + '%';
+            this.updateScenarioPreview();
+        }
+    }
+
+    updateScenarioPreview() {
+        const investmentRate = parseFloat(document.getElementById('investment-rate').value);
+        const rateRange = parseFloat(document.getElementById('rate-range').value);
+        
+        const conservativeRate = Math.max(1, investmentRate - rateRange);
+        const expectedRate = investmentRate;
+        const optimisticRate = Math.min(20, investmentRate + rateRange);
+        
+        document.getElementById('conservative-rate').textContent = conservativeRate.toFixed(1) + '%';
+        document.getElementById('expected-rate').textContent = expectedRate.toFixed(1) + '%';
+        document.getElementById('optimistic-rate').textContent = optimisticRate.toFixed(1) + '%';
+        
+        // Update scenario rate displays in results
+        document.getElementById('conservative-scenario-rate').textContent = `(${conservativeRate.toFixed(1)}%)`;
+        document.getElementById('expected-scenario-rate').textContent = `(${expectedRate.toFixed(1)}%)`;
+        document.getElementById('optimistic-scenario-rate').textContent = `(${optimisticRate.toFixed(1)}%)`;
+        
+        // Update help text
+        const helpText = document.getElementById('rate-range-help');
+        if (helpText) {
+            helpText.textContent = `Market returns vary ±${rateRange.toFixed(1)}% around your expected return (e.g., ${conservativeRate.toFixed(1)}%-${optimisticRate.toFixed(1)}% scenarios)`;
+        }
+    }
+
+    toggleRangeAnalysis() {
+        const enableCheckbox = document.getElementById('enable-range-analysis');
+        const rangeContainer = document.getElementById('range-slider-container');
+        const singleResults = document.getElementById('single-scenario-results');
+        const scenarioResults = document.getElementById('scenario-analysis-results');
+        
+        if (enableCheckbox.checked) {
+            rangeContainer.style.display = 'block';
+            singleResults.style.display = 'none';
+            scenarioResults.style.display = 'block';
+        } else {
+            rangeContainer.style.display = 'none';
+            singleResults.style.display = 'block';
+            scenarioResults.style.display = 'none';
+        }
     }
 
     getInputValues() {
@@ -51,7 +106,9 @@ class CoastFireCalculator {
             monthlyContributions: parseFloat(document.getElementById('monthly-contributions').value) || 0,
             investmentRate: parseFloat(document.getElementById('investment-rate').value) / 100,
             inflationRate: parseFloat(document.getElementById('inflation-rate').value) / 100,
-            withdrawalRate: parseFloat(document.getElementById('withdrawal-rate').value) / 100
+            withdrawalRate: parseFloat(document.getElementById('withdrawal-rate').value) / 100,
+            enableRangeAnalysis: document.getElementById('enable-range-analysis').checked,
+            rateRange: parseFloat(document.getElementById('rate-range').value) / 100
         };
     }
 
@@ -128,6 +185,14 @@ class CoastFireCalculator {
     }
 
     performCalculations(inputs) {
+        if (inputs.enableRangeAnalysis) {
+            return this.performScenarioCalculations(inputs);
+        } else {
+            return this.performSingleScenarioCalculation(inputs);
+        }
+    }
+
+    performSingleScenarioCalculation(inputs) {
         const yearsToRetirement = inputs.retirementAge - inputs.currentAge;
         const realReturnRate = inputs.investmentRate - inputs.inflationRate;
         
@@ -157,6 +222,63 @@ class CoastFireCalculator {
         const projectedGrowth = this.calculateProjectedGrowth(inputs, realReturnRate);
 
         return {
+            singleScenario: {
+                regularFireNumber,
+                coastFireNumber,
+                currentProgress,
+                yearsToCoastFire,
+                monthlyNeeded,
+                yearsToRetirement,
+                projectedGrowth,
+                isCoastFireAchieved: inputs.currentAssets >= coastFireNumber
+            }
+        };
+    }
+
+    performScenarioCalculations(inputs) {
+        const conservativeRate = Math.max(0.01, inputs.investmentRate - inputs.rateRange);
+        const expectedRate = inputs.investmentRate;
+        const optimisticRate = Math.min(0.20, inputs.investmentRate + inputs.rateRange);
+        
+        const scenarios = {
+            conservative: this.calculateScenario({...inputs, investmentRate: conservativeRate}),
+            expected: this.calculateScenario({...inputs, investmentRate: expectedRate}),
+            optimistic: this.calculateScenario({...inputs, investmentRate: optimisticRate})
+        };
+        
+        return {
+            scenarios
+        };
+    }
+
+    calculateScenario(inputs) {
+        const yearsToRetirement = inputs.retirementAge - inputs.currentAge;
+        const realReturnRate = inputs.investmentRate - inputs.inflationRate;
+        
+        const regularFireNumber = inputs.annualSpending / inputs.withdrawalRate;
+        const coastFireNumber = inputs.annualSpending / (inputs.withdrawalRate * Math.pow(1 + realReturnRate, yearsToRetirement));
+        const currentProgress = (inputs.currentAssets / coastFireNumber) * 100;
+        
+        let yearsToCoastFire = null;
+        let monthlyNeeded = 0;
+        
+        if (inputs.currentAssets < coastFireNumber) {
+            if (inputs.monthlyContributions > 0) {
+                yearsToCoastFire = this.calculateYearsToCoastFireWalletBurstMethod(inputs, realReturnRate);
+            }
+            
+            monthlyNeeded = this.calculateMonthlyNeeded(
+                inputs.currentAssets,
+                regularFireNumber,
+                yearsToRetirement,
+                realReturnRate
+            );
+        }
+
+        const projectedGrowth = this.calculateProjectedGrowth(inputs, realReturnRate);
+
+        return {
+            investmentRate: inputs.investmentRate,
             regularFireNumber,
             coastFireNumber,
             currentProgress,
@@ -167,6 +289,7 @@ class CoastFireCalculator {
             isCoastFireAchieved: inputs.currentAssets >= coastFireNumber
         };
     }
+
 
 
     calculateYearsToCoastFireWalletBurstMethod(inputs, realReturnRate) {
@@ -238,7 +361,16 @@ class CoastFireCalculator {
     }
 
     updateResults(results) {
+        if (results.singleScenario) {
+            this.updateSingleScenarioResults(results.singleScenario);
+        } else if (results.scenarios) {
+            this.updateScenarioResults(results);
+        }
+    }
+
+    updateSingleScenarioResults(results) {
         document.getElementById('coast-fire-number').textContent = this.formatCurrency(results.coastFireNumber);
+        document.getElementById('expected-coast-fire-additional').textContent = this.formatCurrency(results.coastFireNumber);
         document.getElementById('regular-fire-number').textContent = this.formatCurrency(results.regularFireNumber);
         document.getElementById('coast-fire-progress').textContent = results.currentProgress.toFixed(1) + '%';
         document.getElementById('years-growth-remaining').textContent = results.yearsToRetirement + ' years';
@@ -263,6 +395,35 @@ class CoastFireCalculator {
         }
     }
 
+    updateScenarioResults(results) {
+        const scenarios = results.scenarios;
+        
+        // Update conservative scenario
+        document.getElementById('conservative-coast-fire').textContent = this.formatCurrency(scenarios.conservative.coastFireNumber);
+        document.getElementById('conservative-progress').textContent = scenarios.conservative.currentProgress.toFixed(1) + '%';
+        document.getElementById('conservative-timeline').textContent = this.formatScenarioTimeline(scenarios.conservative);
+        
+        // Update expected scenario
+        document.getElementById('expected-coast-fire').textContent = this.formatCurrency(scenarios.expected.coastFireNumber);
+        document.getElementById('expected-progress').textContent = scenarios.expected.currentProgress.toFixed(1) + '%';
+        document.getElementById('expected-timeline').textContent = this.formatScenarioTimeline(scenarios.expected);
+        
+        // Update optimistic scenario
+        document.getElementById('optimistic-coast-fire').textContent = this.formatCurrency(scenarios.optimistic.coastFireNumber);
+        document.getElementById('optimistic-progress').textContent = scenarios.optimistic.currentProgress.toFixed(1) + '%';
+        document.getElementById('optimistic-timeline').textContent = this.formatScenarioTimeline(scenarios.optimistic);
+        
+        
+        // Update secondary results with expected scenario data
+        document.getElementById('expected-coast-fire-additional').textContent = this.formatCurrency(scenarios.expected.coastFireNumber);
+        document.getElementById('regular-fire-number').textContent = this.formatCurrency(scenarios.expected.regularFireNumber);
+        document.getElementById('years-to-coast-fire').textContent = scenarios.expected.yearsToCoastFire 
+            ? scenarios.expected.yearsToCoastFire.toFixed(1) + ' years' 
+            : 'Never';
+        document.getElementById('monthly-savings-needed').textContent = this.formatCurrency(scenarios.expected.monthlyNeeded);
+        document.getElementById('years-growth-remaining').textContent = scenarios.expected.yearsToRetirement + ' years';
+    }
+
     updateChart(inputs, results) {
         const ctx = document.getElementById('projection-chart').getContext('2d');
         
@@ -270,6 +431,14 @@ class CoastFireCalculator {
             this.chart.destroy();
         }
 
+        if (results.singleScenario) {
+            this.createSingleScenarioChart(ctx, results.singleScenario);
+        } else if (results.scenarios) {
+            this.createScenarioChart(ctx, results.scenarios);
+        }
+    }
+
+    createSingleScenarioChart(ctx, results) {
         const ages = results.projectedGrowth.map(p => p.age);
         const netWorthData = results.projectedGrowth.map(p => p.netWorth);
         const coastFireData = results.projectedGrowth.map(p => p.coastFireRequired);
@@ -408,6 +577,16 @@ class CoastFireCalculator {
         });
     }
 
+    formatScenarioTimeline(scenario) {
+        if (scenario.isCoastFireAchieved) {
+            return 'Achieved';
+        } else if (scenario.yearsToCoastFire !== null) {
+            return scenario.yearsToCoastFire.toFixed(1) + ' years';
+        } else {
+            return 'Never';
+        }
+    }
+
     formatCurrency(amount) {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
@@ -415,6 +594,163 @@ class CoastFireCalculator {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0
         }).format(amount);
+    }
+
+    createScenarioChart(ctx, scenarios) {
+        const ages = scenarios.expected.projectedGrowth.map(p => p.age);
+        const conservativeData = scenarios.conservative.projectedGrowth.map(p => p.netWorth);
+        const expectedData = scenarios.expected.projectedGrowth.map(p => p.netWorth);
+        const optimisticData = scenarios.optimistic.projectedGrowth.map(p => p.netWorth);
+        const coastFireData = scenarios.expected.projectedGrowth.map(p => p.coastFireRequired);
+
+        this.chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ages,
+                datasets: [{
+                    label: 'Conservative Scenario',
+                    data: conservativeData,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    borderDash: [5, 5]
+                }, {
+                    label: 'Expected Scenario',
+                    data: expectedData,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: '+1',
+                    tension: 0.3,
+                    borderWidth: 3,
+                    pointRadius: 0,
+                    pointHoverRadius: 8
+                }, {
+                    label: 'Optimistic Scenario',
+                    data: optimisticData,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: '-1',
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    borderDash: [5, 5]
+                }, {
+                    label: 'Coast FIRE Required',
+                    data: coastFireData,
+                    borderColor: '#2d2d2d',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.3,
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    pointHoverRadius: 8,
+                    borderDash: [8, 4]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Age',
+                            color: '#6b7280',
+                            font: {
+                                family: 'Inter',
+                                size: 14,
+                                weight: 500
+                            }
+                        },
+                        grid: {
+                            color: '#f0ede7',
+                            borderColor: '#e8e0d6'
+                        },
+                        ticks: {
+                            color: '#6b6b6b',
+                            font: {
+                                family: 'Inter',
+                                size: 12
+                            }
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Amount ($)',
+                            color: '#6b7280',
+                            font: {
+                                family: 'Inter',
+                                size: 14,
+                                weight: 500
+                            }
+                        },
+                        grid: {
+                            color: '#f0ede7',
+                            borderColor: '#e8e0d6'
+                        },
+                        ticks: {
+                            color: '#6b6b6b',
+                            font: {
+                                family: 'Inter',
+                                size: 12
+                            },
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        backgroundColor: '#111827',
+                        titleColor: '#ffffff',
+                        bodyColor: '#ffffff',
+                        borderColor: '#374151',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        titleFont: {
+                            family: 'Inter',
+                            size: 14,
+                            weight: 600
+                        },
+                        bodyFont: {
+                            family: 'Inter',
+                            size: 13
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': $' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            color: '#2d2d2d',
+                            font: {
+                                family: 'Inter',
+                                size: 14,
+                                weight: 500
+                            },
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
     }
 
     saveToStorage() {
@@ -426,7 +762,9 @@ class CoastFireCalculator {
             monthlyContributions: document.getElementById('monthly-contributions').value,
             investmentRate: document.getElementById('investment-rate').value,
             inflationRate: document.getElementById('inflation-rate').value,
-            withdrawalRate: document.getElementById('withdrawal-rate').value
+            withdrawalRate: document.getElementById('withdrawal-rate').value,
+            enableRangeAnalysis: document.getElementById('enable-range-analysis').checked,
+            rateRange: document.getElementById('rate-range').value
         };
         
         localStorage.setItem('coastFireCalculatorData', JSON.stringify(data));
@@ -440,12 +778,19 @@ class CoastFireCalculator {
             Object.keys(data).forEach(key => {
                 const element = document.getElementById(key.replace(/([A-Z])/g, '-$1').toLowerCase());
                 if (element) {
-                    element.value = data[key];
+                    if (element.type === 'checkbox') {
+                        element.checked = data[key];
+                    } else {
+                        element.value = data[key];
+                    }
                 }
             });
             
             // Update slider display values after loading
             this.updateSliderValues();
+            
+            // Initialize range analysis toggle state
+            this.toggleRangeAnalysis();
         }
     }
 }

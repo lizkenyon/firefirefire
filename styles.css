@@ -125,9 +125,11 @@ header p {
 .calculator-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--space-3xl);
+    gap: var(--space-lg);
     align-items: start;
     margin-top: var(--space-2xl);
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 .inputs-section {
@@ -261,6 +263,285 @@ header p {
 .slider-group input[type="range"]:focus::-moz-range-thumb {
     box-shadow: var(--shadow-focus);
     transform: scale(1.1);
+}
+
+/* Range Analysis Styles */
+.range-analysis-section {
+    margin-top: var(--space-md);
+    padding: var(--space-md);
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-light);
+    transition: all var(--transition-normal);
+}
+
+.checkbox-group {
+    margin-bottom: var(--space-md);
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-dark);
+    gap: var(--space-xs);
+    margin-bottom: var(--space-xs);
+}
+
+.checkbox-label input[type="checkbox"] {
+    display: none;
+}
+
+.checkmark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-gray);
+    border-radius: 4px;
+    position: relative;
+    transition: all var(--transition-fast);
+    background: var(--white);
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkmark {
+    background: var(--primary-accent);
+    border-color: var(--primary-accent);
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkmark::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--white);
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.checkbox-group small {
+    color: var(--text-light);
+    font-size: 12px;
+    margin-left: 28px;
+}
+
+.range-slider {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.scenario-preview {
+    display: flex;
+    justify-content: space-between;
+    margin-top: var(--space-md);
+    padding: var(--space-sm);
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-light);
+}
+
+.scenario-item {
+    text-align: center;
+    flex: 1;
+}
+
+.scenario-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.scenario-value {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.scenario-item.conservative .scenario-label {
+    color: #f59e0b;
+}
+.scenario-item.conservative .scenario-value {
+    color: #f59e0b;
+}
+
+.scenario-item.expected .scenario-label {
+    color: #3b82f6;
+}
+.scenario-item.expected .scenario-value {
+    color: #3b82f6;
+}
+
+.scenario-item.optimistic .scenario-label {
+    color: #10b981;
+}
+.scenario-item.optimistic .scenario-value {
+    color: #10b981;
+}
+
+/* Scenario Results Styles */
+.scenarios-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+}
+
+.scenario-column {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    border: 2px solid transparent;
+    background: rgba(255, 255, 255, 0.3);
+    transition: all var(--transition-fast);
+    min-height: 60px;
+}
+
+.scenario-column.conservative {
+    border-color: rgba(245, 158, 11, 0.3);
+}
+.scenario-column.conservative:hover {
+    border-color: #f59e0b;
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.scenario-column.expected {
+    border-color: rgba(59, 130, 246, 0.3);
+}
+.scenario-column.expected:hover {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.scenario-column.optimistic {
+    border-color: rgba(16, 185, 129, 0.3);
+}
+.scenario-column.optimistic:hover {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.scenario-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 120px;
+}
+
+.scenario-column h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+}
+
+.scenario-rate {
+    font-weight: 500;
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.scenario-metrics {
+    display: flex;
+    gap: var(--space-lg);
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.scenario-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-width: 100px;
+}
+
+.scenario-metric-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-light);
+    margin-bottom: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.scenario-metric-value {
+    font-size: 16px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Risk Assessment Styles */
+.risk-assessment {
+    padding: var(--space-lg);
+    margin: var(--space-md);
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+}
+
+.risk-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-xs);
+}
+
+.risk-label {
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.risk-value {
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.risk-value.low {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.risk-value.moderate {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+.risk-value.high {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.risk-value.very-high {
+    background: rgba(185, 28, 28, 0.1);
+    color: #b91c1c;
+}
+
+.risk-details {
+    font-size: 13px;
+    color: var(--text-light);
+    line-height: 1.5;
 }
 
 .results-section {
@@ -441,6 +722,32 @@ header p {
     font-weight: 500;
 }
 
+@media (max-width: 1024px) and (min-width: 769px) {
+    .scenario-column {
+        flex-direction: column;
+        align-items: stretch;
+        padding: var(--space-sm);
+    }
+    
+    .scenario-header {
+        margin-bottom: var(--space-sm);
+        align-items: center;
+    }
+    
+    .scenario-metrics {
+        gap: var(--space-sm);
+        justify-content: space-around;
+    }
+    
+    .scenario-metric {
+        min-width: 80px;
+    }
+    
+    .scenario-metric-value {
+        font-size: 14px;
+    }
+}
+
 @media (max-width: 768px) {
     .calculator-layout {
         grid-template-columns: 1fr;
@@ -484,6 +791,37 @@ header p {
     .chart-container {
         height: 350px;
         padding: var(--space-xl);
+    }
+    
+    /* Scenario Analysis Mobile Styles */
+    .scenario-column {
+        flex-direction: column;
+        align-items: stretch;
+        padding: var(--space-md);
+        min-height: unset;
+    }
+    
+    .scenario-header {
+        margin-bottom: var(--space-sm);
+        align-items: center;
+    }
+    
+    .scenario-metrics {
+        gap: var(--space-sm);
+        justify-content: space-around;
+    }
+    
+    .scenario-metric {
+        min-width: 70px;
+    }
+    
+    .scenario-metric-value {
+        font-size: 14px;
+    }
+    
+    .risk-assessment {
+        margin: var(--space-sm) 0;
+        padding: var(--space-md);
     }
     
     .results-section::before {

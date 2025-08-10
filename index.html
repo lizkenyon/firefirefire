@@ -75,6 +75,39 @@
                                 <small id="investment-rate-help">Expected annual investment return (not adjusted for inflation)</small>
                             </div>
 
+                            <div class="range-analysis-section">
+                                <div class="checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="enable-range-analysis">
+                                        <span class="checkmark"></span>
+                                        Enable Range Analysis
+                                    </label>
+                                    <small>See how market volatility affects your Coast FIRE plan</small>
+                                </div>
+
+                                <div class="slider-group range-slider" id="range-slider-container" style="display: none;">
+                                    <label for="rate-range">Rate of Return Range: <span id="rate-range-value">2.0%</span></label>
+                                    <input type="range" id="rate-range" min="0" max="5" value="2" step="0.1" 
+                                           aria-describedby="rate-range-help">
+                                    <small id="rate-range-help">Market returns vary ±2% around your expected return (e.g., 5%-9% scenarios)</small>
+                                    
+                                    <div class="scenario-preview" id="scenario-preview">
+                                        <div class="scenario-item conservative">
+                                            <span class="scenario-label">Conservative:</span>
+                                            <span class="scenario-value" id="conservative-rate">5.0%</span>
+                                        </div>
+                                        <div class="scenario-item expected">
+                                            <span class="scenario-label">Expected:</span>
+                                            <span class="scenario-value" id="expected-rate">7.0%</span>
+                                        </div>
+                                        <div class="scenario-item optimistic">
+                                            <span class="scenario-label">Optimistic:</span>
+                                            <span class="scenario-value" id="optimistic-rate">9.0%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="slider-group">
                                 <label for="inflation-rate">Inflation Rate: <span id="inflation-rate-value">3.0%</span></label>
                                 <input type="range" id="inflation-rate" min="0" max="10" value="3" step="0.1" 
@@ -92,7 +125,8 @@
                     </div>
 
                     <div class="results-section">
-                        <div class="results-card primary-results">
+                        <!-- Single Scenario Results -->
+                        <div class="results-card primary-results" id="single-scenario-results">
                             <h2>Coast FIRE Results</h2>
                             <div class="result-item">
                                 <span class="result-label">Coast FIRE Number:</span>
@@ -111,6 +145,10 @@
                         <div class="results-card secondary-results">
                             <h3>Additional Metrics</h3>
                             <div class="result-item">
+                                <span class="result-label">Coast FIRE Number (Expected):</span>
+                                <span class="result-value" id="expected-coast-fire-additional">$0</span>
+                            </div>
+                            <div class="result-item">
                                 <span class="result-label">Regular FIRE Number:</span>
                                 <span class="result-value" id="regular-fire-number">$0</span>
                             </div>
@@ -126,6 +164,74 @@
                                 <span class="result-label">Years of Growth Remaining:</span>
                                 <span class="result-value" id="years-growth-remaining">-</span>
                             </div>
+                        </div>
+
+                        <!-- Range Analysis Results -->
+                        <div class="results-card scenario-results" id="scenario-analysis-results" style="display: none;">
+                            <h2>Coast FIRE Scenario Analysis</h2>
+                            
+                            <div class="scenarios-grid">
+                                <div class="scenario-column conservative">
+                                    <div class="scenario-header">
+                                        <h4>Conservative <span class="scenario-rate" id="conservative-scenario-rate">(5%)</span></h4>
+                                    </div>
+                                    <div class="scenario-metrics">
+                                        <div class="scenario-metric">
+                                            <span class="scenario-metric-label">Coast FIRE</span>
+                                            <span class="scenario-metric-value" id="conservative-coast-fire">$0</span>
+                                        </div>
+                                        <div class="scenario-metric">
+                                            <span class="scenario-metric-label">Timeline</span>
+                                            <span class="scenario-metric-value" id="conservative-timeline">-</span>
+                                        </div>
+                                        <div class="scenario-metric">
+                                            <span class="scenario-metric-label">Progress</span>
+                                            <span class="scenario-metric-value" id="conservative-progress">0%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="scenario-column expected">
+                                    <div class="scenario-header">
+                                        <h4>Expected <span class="scenario-rate" id="expected-scenario-rate">(7%)</span></h4>
+                                    </div>
+                                    <div class="scenario-metrics">
+                                        <div class="scenario-metric">
+                                            <span class="scenario-metric-label">Coast FIRE</span>
+                                            <span class="scenario-metric-value" id="expected-coast-fire">$0</span>
+                                        </div>
+                                        <div class="scenario-metric">
+                                            <span class="scenario-metric-label">Timeline</span>
+                                            <span class="scenario-metric-value" id="expected-timeline">-</span>
+                                        </div>
+                                        <div class="scenario-metric">
+                                            <span class="scenario-metric-label">Progress</span>
+                                            <span class="scenario-metric-value" id="expected-progress">0%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="scenario-column optimistic">
+                                    <div class="scenario-header">
+                                        <h4>Optimistic <span class="scenario-rate" id="optimistic-scenario-rate">(9%)</span></h4>
+                                    </div>
+                                    <div class="scenario-metrics">
+                                        <div class="scenario-metric">
+                                            <span class="scenario-metric-label">Coast FIRE</span>
+                                            <span class="scenario-metric-value" id="optimistic-coast-fire">$0</span>
+                                        </div>
+                                        <div class="scenario-metric">
+                                            <span class="scenario-metric-label">Timeline</span>
+                                            <span class="scenario-metric-value" id="optimistic-timeline">-</span>
+                                        </div>
+                                        <div class="scenario-metric">
+                                            <span class="scenario-metric-label">Progress</span>
+                                            <span class="scenario-metric-value" id="optimistic-progress">0%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
                         </div>
 
                         <div class="chart-container">
